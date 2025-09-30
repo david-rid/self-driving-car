@@ -1,5 +1,5 @@
 body {
-    margin:0;
+    margin:0px;
     background:darkgray;
     overflow: hidden;
     display: flex;
@@ -7,6 +7,11 @@ body {
     align-items: center;
 }
 
+canvas {
+  display: block;        /* important so vertical margins apply */
+  margin: 24px 0;        /* top/bottom 24px, left/right 0 */
+  /* or logical: margin-block: 24px; */
+}
 #vButtons {
     display: flex;
     flex-direction: column;

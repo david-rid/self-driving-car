@@ -1,5 +1,5 @@
 class Car {
-    constructor(x, y, width, height, controlType, maxSpeed = 8) {
+    constructor(x, y, width, height, controlType, maxSpeed = 3) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -16,14 +16,29 @@ class Car {
 
         this.useBrain = controlType == "AI";
 
-        if (controlType != "DUMMY") {
+
+        if (controlType == "AI") {
             this.sensor = new Sensor(this);
             this.brain = new NeuralNetwork(
                 [this.sensor.rayCount,6,4]
             );
+            this.frameAge = 0;
+            this.maxPasses = 0;
+            this.isStuck = false;
+        }
+
+        if (controlType == "PLAYER") {
+            console.log("player car");
+        }
+
+        if (controlType == "DUMMY") {
+            this.passed = false;
         }
 
         this.controls = new Controls(controlType);
+
+        // for stuck detection
+        
     }
     
     update(roadBorders, traffic) {
@@ -41,7 +56,6 @@ class Car {
                 offsets,
                 this.brain
             );
-            console.log(outputs);
 
             if (this.useBrain) {
                 this.controls.forward = outputs[0];
