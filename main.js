@@ -16,10 +16,10 @@ const aiRoad = new Road(aiCanvas.width/2, aiCanvas.width*0.9);
 const playerRoad = new Road(playerCanvas.width/2, playerCanvas.width*0.9);
 
 // create player car
-playerCar = new Car(playerRoad.getLaneCenter(1), 100, 30, 50, "PLAYER");
+let playerCar = new Car(playerRoad.getLaneCenter(1), 100, 30, 50, "PLAYER");
 
 // generate AI cars
-const aiCount = 100;
+const aiCount = 250;
 let aiCars = generateCars(aiCount);
 let bestCar = aiCars[0];
 if (localStorage.getItem("bestBrain")) {
@@ -31,10 +31,47 @@ if (localStorage.getItem("bestBrain")) {
         if (i != 0) {
             NeuralNetwork.mutate(
                 aiCars[i].brain,
-                0.2
+                0.25
             );
         }
     }
+}
+
+function resetAiState() {
+
+    aiCars = generateCars(aiCount);
+
+    if (localStorage.getItem("bestBrain")) {
+        for (let i = 0; i < aiCars.length; i++) {
+            aiCars[i].brain = JSON.parse(
+                localStorage.getItem("bestBrain") 
+            );
+
+            if (i != 0) {
+                NeuralNetwork.mutate(
+                    aiCars[i].brain,
+                    0.25
+                );
+            }
+        }
+    } else {
+        let aiCars = generateCars(aiCount);
+        let bestCar = aiCars[0];
+        save();
+    }
+
+    aiTraffic.length = 0;
+    randomTraffic(aiRoad, aiTraffic);
+}
+
+function resetPlayerState() {
+
+    console.log("resetPlayerState() called");
+
+    playerCar = new Car(playerRoad.getLaneCenter(1), 100, 30, 50, "PLAYER");
+
+    playerTraffic.length = 0;
+    randomTraffic(playerRoad, playerTraffic);
 }
 
 // make random traffic for ai road
@@ -107,16 +144,18 @@ function checkStuck(car, traffic) {
     }
 
     if (car.frameAge > TIMEOUT_FRAMES) {
-        car.damaged = true;  // or car.isDead = true and remove from array
-        car.isStuck = true;
+        // only register car as stuck if it is not already damaged
+        // and also check if the car has passed all traffic
+        if (!car.damaged && car.maxPasses < traffic.length) {
+            car.damaged = true;
+            car.isStuck = true;
+        }
     }
 }
 
 function pickBestCar(cars) {
 
     const eligibleCars = cars.filter(c => !c.isStuck);
-
-    console.log(eligibleCars.length);
 
     if (eligibleCars.length == 0) {
         return cars[0];
@@ -152,6 +191,7 @@ function animatePlayerSection() {
     }
     // update player car
     playerCar.update(playerRoad.borders, playerTraffic);
+
     // follow player car
     playerCtx.save();
     playerCtx.translate(0, -playerCar.y+playerCanvas.height*0.7);
@@ -165,28 +205,37 @@ function animatePlayerSection() {
     playerCar.draw(playerCtx, "blue", true);
     // restore ctx
     playerCtx.restore();
+
+    // if player car is disabled reset player state
+    if (playerCar.damaged) {
+        resetPlayerState();
+        console.log("player car out of comission");
+    }
+
+    // check if the player won
+    if (playerCar.maxPasses >= playerTraffic.length) {
+        console.log("player won!");
+    }
 }
 
 function animateAiSection() {
 
-    // check if all cars are damaged / stuck, restart if so
-    // damagedCount = 0;
+    // disable stuck cars
+    for (let i = 0; i < aiCars.length; i++) {
+        checkStuck(aiCars[i], aiTraffic);
+    }
+    let damagedCount = 0;
+    for (let i = 0; i < aiCars.length; i++) {
+        if (aiCars[i].damaged == true) {
+            damagedCount++;
+        }
+    }
 
-    // for (let i = 0; i < aiCars.length; i++) {
-    //     checkStuck(aiCars[i], aiTraffic);
-    // }
-    
-    // for (let i = 0; i < aiCars.length; i++) {
-    //     if (aiCars[i].damaged) {
-    //         damagedCount++;
-    //     }
-    // }
-    // if (damagedCount >= aiCount) {
-    //     updateAI(aiCars, bestCar);
-    // }
-
-    // check passed traffic count
-    //console.log("passed count: " + checkPassed(bestCar, aiTraffic));
+    // if all cars are disabled save the best car and reset the simulation
+    if (damagedCount == aiCount) {
+        save();
+        resetAiState();
+    }
 
     // update ai road traffic
     for (let i = 0; i < aiTraffic.length; i++) {
@@ -198,7 +247,11 @@ function animateAiSection() {
     }
     // find the best car (the car that travelled the furthest)
     bestCar = pickBestCar(aiCars);
-    //console.log(bestCar);
+
+    // check if the AI won
+    if (bestCar.maxPasses >= aiTraffic.length) {
+        console.log("ai won!");
+    }
 
     // follow bestCar
     aiCtx.save();

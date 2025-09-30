@@ -14,8 +14,9 @@ class Car {
 
         this.damaged = false;
 
-        this.useBrain = controlType == "AI";
+        this.maxPasses = 0;
 
+        this.useBrain = controlType == "AI";
 
         if (controlType == "AI") {
             this.sensor = new Sensor(this);
@@ -23,7 +24,6 @@ class Car {
                 [this.sensor.rayCount,6,4]
             );
             this.frameAge = 0;
-            this.maxPasses = 0;
             this.isStuck = false;
         }
 
