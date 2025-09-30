@@ -19,7 +19,7 @@ const playerRoad = new Road(playerCanvas.width/2, playerCanvas.width*0.9);
 playerCar = new Car(playerRoad.getLaneCenter(1), 100, 30, 50, "PLAYER");
 
 // generate AI cars
-const aiCount = 1000;
+const aiCount = 100;
 let aiCars = generateCars(aiCount);
 let bestCar = aiCars[0];
 if (localStorage.getItem("bestBrain")) {
@@ -31,10 +31,9 @@ if (localStorage.getItem("bestBrain")) {
         if (i != 0) {
             NeuralNetwork.mutate(
                 aiCars[i].brain,
-                0.5
+                0.2
             );
         }
-        
     }
 }
 
@@ -47,36 +46,6 @@ const playerTraffic = [];
 randomTraffic(playerRoad, playerTraffic);
 
 animate();
-
-function updateAI() {
-
-    // make new brains
-    aiCars = generateCars(aiCount);
-
-    // if bestBrain exists set car brains to best brain
-    if (localStorage.getItem("bestBrain")) {
-
-        const best = JSON.parse(localStorage.getItem("bestBrain"));
-
-        // keep elite (no mutation)
-        aiCars[0].brain = best;
-
-        // mutate the rest
-        for (let i = 1; i < aiCars.length; i++) {
-
-            // set to best brain
-            aiCars[i].brain = JSON.parse(
-                localStorage.getItem("bestBrain") 
-            );
-
-            // mutate based on best brain
-            NeuralNetwork.mutate(aiCars[i].brain, 0.25); 
-        }
-    }
-
-    aiTraffic.length = 0;
-    randomTraffic(aiRoad, aiTraffic);
-}
 
 function save() {
     localStorage.setItem(
@@ -92,8 +61,7 @@ function discard() {
 function generateCars(N) {
     const cars = [];
     for (let i = 0; i < N; i++) {
-        lane = i % 3;
-        const c = new Car(aiRoad.getLaneCenter(lane), 100, 30, 50, "AI")
+        const c = new Car(aiRoad.getLaneCenter(1), 100, 30, 50, "AI")
         c.angle += (Math.random()-0.5)*0.02;
         cars.push(c);
     }
@@ -202,20 +170,20 @@ function animatePlayerSection() {
 function animateAiSection() {
 
     // check if all cars are damaged / stuck, restart if so
-    damagedCount = 0;
+    // damagedCount = 0;
 
-    for (let i = 0; i < aiCars.length; i++) {
-        checkStuck(aiCars[i], aiTraffic);
-    }
+    // for (let i = 0; i < aiCars.length; i++) {
+    //     checkStuck(aiCars[i], aiTraffic);
+    // }
     
-    for (let i = 0; i < aiCars.length; i++) {
-        if (aiCars[i].damaged) {
-            damagedCount++;
-        }
-    }
-    if (damagedCount >= aiCount) {
-        updateAI(aiCars, bestCar);
-    }
+    // for (let i = 0; i < aiCars.length; i++) {
+    //     if (aiCars[i].damaged) {
+    //         damagedCount++;
+    //     }
+    // }
+    // if (damagedCount >= aiCount) {
+    //     updateAI(aiCars, bestCar);
+    // }
 
     // check passed traffic count
     //console.log("passed count: " + checkPassed(bestCar, aiTraffic));
