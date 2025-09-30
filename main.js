@@ -106,9 +106,9 @@ function generateCars(N) {
 }
 
 function randomTraffic(road, trafficArray) {
-    for (let i = 0; i < 20; i++) {
-        const randomNumber = Math.floor(Math.random() * 3);
-        const carToAdd = new Car(road.getLaneCenter(randomNumber), (-100 - (150*i)), 30, 50, "DUMMY", 2);
+    for (let i = 0; i < 50; i++) {
+        const lane = i % 3;
+        const carToAdd = new Car(road.getLaneCenter(lane), (-100 - (150*i)), 30, 50, "DUMMY", 2);
         trafficArray.push(carToAdd);
     }
 }
@@ -129,9 +129,8 @@ function checkPassed(car, traffic) {
 function checkStuck(car, traffic) {
     const TIMEOUT_FRAMES = 600;
 
-    // ensure fields exist (in case of non-AI cars)
+    // ensure frame age field exist (in case of non-AI cars)
     if (car.frameAge == null) car.frameAge = 0;
-    if (car.maxPasses == null) car.maxPasses = 0;
 
     car.frameAge++;
 
@@ -170,9 +169,9 @@ function pickBestCar(cars) {
 
 function animate() {
 
-    aiCanvas.height = window.innerHeight - 100;
+    aiCanvas.height = window.innerHeight;
     networkCanvas.height = window.innerHeight - 100;
-    playerCanvas.height = window.innerHeight - 100;
+    playerCanvas.height = window.innerHeight;
 
     // animate AI Section
     animateAiSection();
@@ -191,7 +190,13 @@ function animatePlayerSection() {
     }
     // update player car
     playerCar.update(playerRoad.borders, playerTraffic);
-
+    const passedNow = checkPassed(playerCar, playerTraffic);
+    playerCar.maxPasses = Math.max(playerCar.maxPasses, passedNow);
+    console.log("player has maxPasses of " + playerCar.maxPasses);
+    // check if the player won
+    if (playerCar.maxPasses >= playerTraffic.length) {
+        console.log("player won!");
+    }
     // follow player car
     playerCtx.save();
     playerCtx.translate(0, -playerCar.y+playerCanvas.height*0.7);
@@ -210,11 +215,6 @@ function animatePlayerSection() {
     if (playerCar.damaged) {
         resetPlayerState();
         console.log("player car out of comission");
-    }
-
-    // check if the player won
-    if (playerCar.maxPasses >= playerTraffic.length) {
-        console.log("player won!");
     }
 }
 
